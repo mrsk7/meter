@@ -7,14 +7,14 @@ struct ll {
 };
 
 struct wrapper {
-	struct ll this;
+	struct ll *this;
 	int size;
 	struct wrapper *next;
 };
 
 
 struct node {
-	struct wrapper *remaining
+	struct wrapper *remaining;
 	struct ll *openset;
 	struct ll *closed_set;
 	struct node *children;
@@ -22,19 +22,22 @@ struct node {
 
 
 
-void print_ll(struct ll *lls,int n) {
-	int i;
-	for (i=0;i<n;i++) {
-		struct ll *ptr=array[i].next;
-		while (ptr!=NULL) {
-			printf("%d->",ptr->meter);
-			ptr=ptr->next;
-		}
-		printf("\n");
-	}
+void print_ll(struct ll *lls) {
+        struct ll *ptr = lls;
+        while (ptr!=NULL) {
+                printf("%d->",ptr->meter);
+                ptr=ptr->next;
+        }
+        printf("\n");
 }
 
-void print_all(struct wrapper *
+void print_all(struct wrapper *ws) {
+    struct wrapper *head = ws;
+    while (head) {
+        print_ll(head->this);
+        head=head->next;
+    }
+}
 
 
 /*
@@ -46,13 +49,13 @@ void print_all(struct wrapper *
 	struct node root = build_node(root);
 }*/
 
-(struct wrapper *) getNewWrapper() {
-	struct wrapper *ret = (struct wrapper *) malloc(sizeof(struct wrapper));
+struct wrapper *getNewWrapper() {
+	struct wrapper *ret =  malloc(sizeof(struct wrapper));
 	return ret;
 }
 
 
-void fillWrapper(struct wrapper *ws, int n) {
+void fillWrapper(struct wrapper *ws, FILE *file, int n) {
 	ws->size = n;
 	ws->next = NULL;
 	int i,dummy,input;
@@ -61,7 +64,7 @@ void fillWrapper(struct wrapper *ws, int n) {
 		printf("Error reading input\n");
 		exit(1);
 	}
-	temp = (struct ll *) malloc(sizeof(struct ll));
+	temp =  malloc(sizeof(struct ll));
 	temp->next=NULL;
 	temp->meter = input;
 	ws->this = temp;
@@ -71,7 +74,7 @@ void fillWrapper(struct wrapper *ws, int n) {
 			printf("Error reading input\n");
 			exit(1);
 		}
-		temp = (struct ll *) malloc(sizeof(struct ll));
+		temp = malloc(sizeof(struct ll));
 		temp->next=NULL;
 		temp->meter = input;
 		head->next = temp;
@@ -94,21 +97,21 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	int i,num,j,input;
-	struct wrapper *temp,head;
+	struct wrapper *temp,*head;
 	struct wrapper *root = getNewWrapper();
 	head = root;
 	if ((dummy = fscanf(file,"%d",&num)) == 0) {
 		printf("Error reading number first number\n");
 		exit(1);
 	}
-	fillWrapper(root,num);
+	fillWrapper(root,file,num);
 	for (i=0;i<dangerous-1;i++) {
 		if ((dummy = fscanf(file,"%d",&num)) == 0) {
 			printf("Error reading number first number\n");
 			exit(1);
 		}
 		temp = getNewWrapper();
-		fillWrapper(temp,num);
+		fillWrapper(temp,file,num);
 		head->next = temp;
 		head = temp;
 	}
