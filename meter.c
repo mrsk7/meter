@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct ll {
 	int meter;
@@ -16,10 +17,14 @@ struct wrapper {
 struct node {
 	struct wrapper *remaining;
 	struct ll *openset;
-	struct ll *closed_set;
-	struct node *children;
+	struct ll *closet;
+	struct node *next_in_queue;
 };
 
+struct queue {
+	struct node *front;
+	struct node *rear;
+};
 
 
 void print_ll(struct ll *lls) {
@@ -82,6 +87,75 @@ void fillWrapper(struct wrapper *ws, FILE *file, int n) {
 	}
 }
 
+void insert(struct queue *q,struct node *nd) {
+	if (q->rear == NULL) {
+		q->rear = nd;
+		q->front = nd;
+		return;
+	}
+	(q->rear)->next_in_queue = nd;
+	q->rear = nd;
+}
+
+struct node *removeq(struct queue *q) {
+	struct node *ret = q->front;
+	q->front = (q->front)->next_in_queue;
+	return ret;
+}
+
+struct node *getNewNode() {
+	struct node *ret = malloc(sizeof(struct node));
+	return ret;
+}
+
+void fillNode(struct node *nd, struct ll *os,struct ll *cs, struct wrapper *rem) {
+	nd->openset = malloc(sizeof(struct ll));
+	nd->closet = malloc(sizeof(struct ll));
+	nd->remaining = malloc(sizeof(struct wrapper));
+	memcpy(nd->openset,os,sizeof(struct ll));
+	memcpy(nd->closet,cs,sizeof(struct ll));
+	memcpy(nd->remaining,rem,sizeof(struct wrapper));
+}
+
+struct wrapper *getWrapper(struct node *nd) {
+	struct wrapper *ret;
+   	memcpy(ret,nd->remaining,sizeof(struct wrapper));
+	ret->next = NULL;
+	return ret;
+}
+
+struct ll *addToLinkedList(struct ll *this,struct ll* new) {
+	struct ll *ret;
+	memcpy(ret,this,sizeof(struct ll));
+	new->next = ret;
+	return ret;
+}
+
+struct ll *build_tree(struct wrapper *root) {
+	int i;
+	struct ll *comb;
+	struct wrapper wp;
+	struct queue *q = malloc(sizeof(struct queue));;
+	q->rear = NULL;
+	struct node *start = getNewNode();
+	struct node *cur,child;
+	fillNode(start,malloc(sizeof(struct ll)),malloc(sizeof(struct ll)),root);
+	insert(q,start);
+	cur = removeq(q);
+	while(1) {
+		cur = removeq(q);
+		if (cur->remaining ==NULL) break;
+		wp = getWrapper(cur);
+		for (i=0;i<size;i++) {
+			comb = wp->this;
+				child = getNewNode();
+				fillNode(child,
+			
+		}
+	}	
+	return NULL;
+}
+
 
 int main (int argc, char *argv[]) {
     char *infile = argv[1] ;
@@ -115,9 +189,8 @@ int main (int argc, char *argv[]) {
 		head->next = temp;
 		head = temp;
 	}
-	print_all(root);
-//	root = build_tree(comb_array,dangerous);
-//	struct node *set = bfs(root);
-//	print_solution(set,meters);
+	//print_all(root);
+	struct ll *not_solution = build_tree(root);
+	//print_solution(not_solution,meters);
 	return 0;
 }
