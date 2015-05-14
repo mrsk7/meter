@@ -6,29 +6,34 @@ struct ll {
 	int meter;
 	struct ll *next; 
 };
+typedef struct ll LinkedList;
 
 struct wrapper {
-	struct ll *this;
+	LinkedList *this;
 	int size;
 	struct wrapper *next;
 };
 
+typedef struct wrapper Wrapper;
 
 struct node {
-	struct wrapper *remaining;
-	struct ll *openset;
-	struct ll *closet;
+	Wrapper *remaining;
+	LinkedList *openset;
+	LinkedList *closet;
 	struct node *next_in_queue;
 };
 
+typedef struct node Node;
+
 struct queue {
-	struct node *front;
-	struct node *rear;
+	Node *front;
+	Node *rear;
 };
 
+typedef struct queue Queue;
 
-void print_ll(struct ll *lls) {
-        struct ll *ptr = lls;
+void print_ll(LinkedList *lls) {
+        LinkedList *ptr = lls;
         while (ptr!=NULL) {
                 printf("%d->",ptr->meter);
                 ptr=ptr->next;
@@ -36,8 +41,8 @@ void print_ll(struct ll *lls) {
         printf("\n");
 }
 
-void print_all(struct wrapper *ws) {
-    struct wrapper *head = ws;
+void print_all(Wrapper *ws) {
+    Wrapper *head = ws;
     while (head) {
         print_ll(head->this);
         head=head->next;
@@ -45,31 +50,22 @@ void print_all(struct wrapper *ws) {
 }
 
 
-/*
-(struct node) build_root(struct node nd) {
-	nd = (struct node *) malloc(sizeof(struct node));
-
-
-(struct node *) build_tree(struct ll *array,int n) {
-	struct node root = build_node(root);
-}*/
-
-struct wrapper *getNewWrapper() {
-	struct wrapper *ret =  malloc(sizeof(struct wrapper));
+Wrapper *getNewWrapper() {
+	Wrapper *ret =  malloc(sizeof(Wrapper));
 	return ret;
 }
 
 
-void fillWrapper(struct wrapper *ws, FILE *file, int n) {
+void fillWrapper(Wrapper *ws, FILE *file, int n) {
 	ws->size = n;
 	ws->next = NULL;
 	int i,dummy,input;
-	struct ll *temp,*head;
+	LinkedList *temp,*head;
 	if ((dummy = fscanf(file,"%d",&input)) == 0) {
 		printf("Error reading input\n");
 		exit(1);
 	}
-	temp =  malloc(sizeof(struct ll));
+	temp =  malloc(sizeof(LinkedList));
 	temp->next=NULL;
 	temp->meter = input;
 	ws->this = temp;
@@ -79,7 +75,7 @@ void fillWrapper(struct wrapper *ws, FILE *file, int n) {
 			printf("Error reading input\n");
 			exit(1);
 		}
-		temp = malloc(sizeof(struct ll));
+		temp = malloc(sizeof(LinkedList));
 		temp->next=NULL;
 		temp->meter = input;
 		head->next = temp;
@@ -87,7 +83,7 @@ void fillWrapper(struct wrapper *ws, FILE *file, int n) {
 	}
 }
 
-void insert(struct queue *q,struct node *nd) {
+void insert(struct queue *q,Node *nd) {
 	if (q->rear == NULL) {
 		q->rear = nd;
 		q->front = nd;
@@ -97,62 +93,95 @@ void insert(struct queue *q,struct node *nd) {
 	q->rear = nd;
 }
 
-struct node *removeq(struct queue *q) {
-	struct node *ret = q->front;
+Node *removeq(struct queue *q) {
+	if (q->front = NULL) return NULL;
+	Node *ret = q->front;
 	q->front = (q->front)->next_in_queue;
 	return ret;
 }
 
-struct node *getNewNode() {
-	struct node *ret = malloc(sizeof(struct node));
+LinkedList *deepCopyLinkedList(LinkedList *head) {
+	LinkedList *copy;
+	if (head == NULL) {
+		return NULL;
+	}
+	else {
+		copy = malloc(sizeof(LinkedList));
+		copy->meter = head->meter;
+		copy->next = deepCopyLinkedList(head->next);
+		return copy;
+	}
+}
+
+Wrapper *deepCopyWrapper(Wrapper *head) {
+	Wrapper *copy;
+	if (head == NULL) {
+		return NULL;
+	}
+	else {
+		copy = malloc(sizeof(Wrapper));
+		copy->this = deepCopyLinkedList(head->this);
+		copy->size = head->size;
+		copy->next = deepCopyWrapper(head->next);
+		return copy;
+	}
+}
+
+Node *createChild(Node *parent) {
+	Node *ret = malloc(sizeof(Node));
+	ret->openset=deepCopyLinkedList(parent->openset);
+	ret->closet=deepCopyLinkedList(parent->closet);
+	if (parent->remaining->next == NULL) ret->remaining = NULL;
+	ret->remaining = deepCopyWrapper(parent->remaining->next);
 	return ret;
 }
 
-void fillNode(struct node *nd, struct ll *os,struct ll *cs, struct wrapper *rem) {
-	nd->openset = malloc(sizeof(struct ll));
-	nd->closet = malloc(sizeof(struct ll));
-	nd->remaining = malloc(sizeof(struct wrapper));
-	memcpy(nd->openset,os,sizeof(struct ll));
-	memcpy(nd->closet,cs,sizeof(struct ll));
-	memcpy(nd->remaining,rem,sizeof(struct wrapper));
+void updateOpenSet(Node *node,LinkedList *ll) {
+	LinkedList *entry = malloc(sizeof(LinkedList));
+	entry->meter = ll->meter;
+	entry->next = ll;
+	ll = entry;
 }
 
-struct wrapper *getWrapper(struct node *nd) {
-	struct wrapper *ret;
-   	memcpy(ret,nd->remaining,sizeof(struct wrapper));
-	ret->next = NULL;
-	return ret;
+void updateClosedset(Node *node,Wrapper *list,LinkedList* key) {
+	LinkedList *head = list->this;
+	while(!head) {
+		if (head->meter == key->meter) {
+			head = head->next;
+			continue;
+		}
+		LinkedList *entry = malloc(sizeof(LinkedList));
+		entry->meter = head->meter;
+		entry->next = node->closet;
+		node->closet = entry
+	}
 }
 
-struct ll *addToLinkedList(struct ll *this,struct ll* new) {
-	struct ll *ret;
-	memcpy(ret,this,sizeof(struct ll));
-	new->next = ret;
-	return ret;
-}
-
-struct ll *build_tree(struct wrapper *root) {
+LinkedList *build_tree(Wrapper *root) {
 	int i;
-	struct ll *comb;
-	struct wrapper wp;
 	struct queue *q = malloc(sizeof(struct queue));;
 	q->rear = NULL;
-	struct node *start = getNewNode();
-	struct node *cur,child;
-	fillNode(start,malloc(sizeof(struct ll)),malloc(sizeof(struct ll)),root);
-	insert(q,start);
-	cur = removeq(q);
+	Node *start = malloc(sizeof(Node));
+	Node->openset = NULL;
+	Node->closet = NULL;
+	Node->next_in_queue = NULL;
+	Node->remaining = root;
+	Node *current;			//Pointer used to point to removed Node from Queue.
+	Node *child; 			//Pointer for new child-node of each Node
+	LinkedList *head;
 	while(1) {
-		cur = removeq(q);
-		if (cur->remaining ==NULL) break;
-		wp = getWrapper(cur);
-		for (i=0;i<size;i++) {
-			comb = wp->this;
-				child = getNewNode();
-				fillNode(child,
-			
+		current=removeq(q);
+		if ((current==NULL) || (current->remaining)) break;
+		head = current->remaining->this;
+		while(head!=NULL) {
+			child = createChild(current);
+			updateOpenset(child,head);
+			updateClosedset(child,current->remaining,head);
+			updateRemaining(child,head);
+			head=head->next;
 		}
-	}	
+		deepfree(current);
+	}
 	return NULL;
 }
 
@@ -171,8 +200,8 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	int i,num,j,input;
-	struct wrapper *temp,*head;
-	struct wrapper *root = getNewWrapper();
+	Wrapper *temp,*head;
+	Wrapper *root = getNewWrapper();
 	head = root;
 	if ((dummy = fscanf(file,"%d",&num)) == 0) {
 		printf("Error reading number first number\n");
@@ -190,7 +219,7 @@ int main (int argc, char *argv[]) {
 		head = temp;
 	}
 	//print_all(root);
-	struct ll *not_solution = build_tree(root);
+	LinkedList *not_solution = build_tree(root);
 	//print_solution(not_solution,meters);
 	return 0;
 }
