@@ -2,11 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+int global;
+
 void logEntry(const char *func) {
+	int i;
+	for (i=0;i<global;i++) printf("\t");
+	global++;
 	printf("Entry: %s\n",func);
 }
 
 void logExit(const char *func) {
+	int i;
+	global--;
+	for (i=0;i<global;i++) printf("\t");
 	printf("Exit: %s\n",func);
 }
 
@@ -94,6 +102,7 @@ void fillWrapper(Wrapper *ws, FILE *file, int n) {
 void insert(struct queue *q,Node *nd) {
 	logEntry(__FUNCTION__);
 	if (q->rear == NULL) {
+		printf("q->rear == NULL\n");
 		q->rear = nd;
 		q->front = nd;
 		logExit(__FUNCTION__);
@@ -112,6 +121,7 @@ Node *removeq(struct queue *q) {
 	}
 	Node *ret = q->front;
 	q->front = (q->front)->next_in_queue;
+	if (q->front == NULL) q->rear = NULL;
 	logExit(__FUNCTION__);
 	return ret;
 }
@@ -120,31 +130,31 @@ LinkedList *deepCopyLinkedList(LinkedList *head) {
 	logEntry(__FUNCTION__);
 	LinkedList *copy;
 	if (head == NULL) {
-		return NULL;
+		copy = NULL;
 	}
 	else {
 		copy = malloc(sizeof(LinkedList));
 		copy->meter = head->meter;
 		copy->next = deepCopyLinkedList(head->next);
-		return copy;
 	}
 	logExit(__FUNCTION__);
+	return copy;
 }
 
 Wrapper *deepCopyWrapper(Wrapper *head) {
 	logEntry(__FUNCTION__);
 	Wrapper *copy;
 	if (head == NULL) {
-		return NULL;
+		copy = NULL;
 	}
 	else {
 		copy = malloc(sizeof(Wrapper));
 		copy->this = deepCopyLinkedList(head->this);
 		copy->size = head->size;
 		copy->next = deepCopyWrapper(head->next);
-		return copy;
 	}
 	logExit(__FUNCTION__);
+	return copy;
 }
 
 void deepfreeLL(LinkedList *ll) {
@@ -191,7 +201,9 @@ Node *createChild(Node *parent,int key) {
 		if (check->meter == key) { return NULL; }
 		else check=check->next;
 	}
+	
 	Node *ret = malloc(sizeof(Node));
+	ret->next_in_queue = NULL;
 	ret->openset=deepCopyLinkedList(parent->openset);
 	ret->closet=deepCopyLinkedList(parent->closet);
 	if (parent->remaining->next == NULL) ret->remaining = NULL;
@@ -204,8 +216,8 @@ void updateOpenset(Node *node,LinkedList *ll) {
 	logEntry(__FUNCTION__);
 	LinkedList *entry = malloc(sizeof(LinkedList));
 	entry->meter = ll->meter;
-	entry->next = ll;
-	ll = entry;
+	entry->next = node->openset;
+	node->openset = entry;
 	logExit(__FUNCTION__);
 }
 
@@ -230,7 +242,13 @@ void updateRemaining(Node *node,LinkedList *key) {
 	logEntry(__FUNCTION__);
 	Wrapper *prev,*headW,*tmp;
 	LinkedList *headLL;
+	if (node->remaining == NULL) {
+		printf("Zero");
+		logExit(__FUNCTION__);
+		return;
+	}
 	if (node->remaining->next == NULL)	{//Check if there in only one wrapper element in the list
+		printf("Only on element\n");
 		headW = node->remaining;
 		headLL = headW->this;
 		while (headLL!=NULL) {
@@ -245,8 +263,10 @@ void updateRemaining(Node *node,LinkedList *key) {
 	}
 	else {
 		/* Because I use a prev and a headW pointer, first I must check the head
+		printf("checking for %d \n");
 		 * of the Wrapper list alone.  */
 		/*Checking first element */
+		printf("More than one element\n");
 		headLL = node->remaining->this;
 		while (headLL!=NULL) {
 			if (headLL->meter==key->meter) {
@@ -256,13 +276,15 @@ void updateRemaining(Node *node,LinkedList *key) {
 				free(headW);
 				break;
 			}
+			headLL= headLL->next;
 		}
 		/*Now I update the rest of the list */
 		prev = node->remaining;
 		headW = node->remaining->next;
-		headLL = headW->this;
-		int flag = 0;
+		int flag;
 		while (headW!=NULL) {			//While there are dangerous combinations
+			flag = 0;
+			headLL = headW->this;
 			while (headLL!=NULL) {		//While there are meters in each combination
 				if (headLL->meter==key->meter) {	//If I match the key, remove this combination
 					deepfreeLL(headW->this);
@@ -283,44 +305,87 @@ void updateRemaining(Node *node,LinkedList *key) {
 	logExit(__FUNCTION__);
 }
 
+print_child(Node *node) {
+	printf("------------\n");
+	printf("Openset:\n");
+	print_ll(node->openset);
+	printf("------------\n");
+	printf("Closed set:\n");
+	print_ll(node->closet);
+	printf("------------\n");
+	printf("Remaining:\n");
+	print_all(node->remaining);
+	printf("------------\n");
+}
+
+
+void printQSize(struct queue *q) {
+	int cnt = 0;
+	Node *head = q->front;
+	while (head!=NULL) {
+		cnt++;
+		head=head->next_in_queue;
+	}
+	printf("Queue size is now %d\n",cnt);
+}
+
+
 LinkedList *build_tree(Wrapper *root) {
 	logEntry(__FUNCTION__);
 	int i;
 	struct queue *q = malloc(sizeof(struct queue));;
 	q->rear = NULL;
+	q->front = NULL;
 	Node *start = malloc(sizeof(Node));
 	start->openset = NULL;
 	start->closet = NULL;
 	start->next_in_queue = NULL;
 	start->remaining = root;
+		printQSize(q);
 	insert(q,start);
+		printQSize(q);
 	Node *current;			//Pointer used to point to removed Node from Queue.
 	Node *child; 			//Pointer for new child-node of each Node
 	LinkedList *head;
 	while(1) {
 		current=removeq(q);
-		if ((current==NULL) || (current->remaining==NULL)) break;
+		printQSize(q);
+		if ((current==NULL) || (current->remaining==NULL)) {
+			printf("break\n");
+			break;
+		}
 		head = current->remaining->this;
 		while(head!=NULL) {
 			child = createChild(current,head->meter);
-			if (child == NULL) continue;	//createChild returns null only if given meter belongs to closed set
+			if (child == NULL) {
+				head=head->next;
+				continue;	//createChild returns null only if given meter belongs to closed set
+			}
 			updateOpenset(child,head);	//FIX
 			updateClosedset(child,current->remaining->this,head);
 			updateRemaining(child,head);
+			printf("Created Child:\n");
+			print_child(child);
 			insert(q,child);
 			head=head->next;
 		}
+		printf("Current is \n");
+		print_child(current);
 		deepfreeNode(current);
 
 	}
+	if (current == NULL) {
+		printf("Error. Queue should never be empty\n");
+		exit(-1);
+	}
 	LinkedList *ret = current->openset;
-	deepfreeNode(current);
+	print_ll(ret);
 	logExit(__FUNCTION__);
 	return ret;
 }
 
 int inList(LinkedList *ll, int i) {
-	LinkedList *head;
+	LinkedList *head = ll;
 	while (head!=NULL) {
 		if (head->meter == i) return 1;
 		head=head->next;
@@ -330,13 +395,16 @@ int inList(LinkedList *ll, int i) {
 
 void print_solution(LinkedList *ll, int size) {
 	int i;
-	for (i=1;i<size;i++)
-		if (inList(ll,i)==0)
+	for (i=1;i<=size;i++) {
+		if (inList(ll,i)==0) {
 			printf("%d ",i);
+		}
+	}
 	printf("\n");
 }
 
 int main (int argc, char *argv[]) {
+	global = 0;
     char *infile = argv[1] ;
 	FILE *file;
     if (argc<2) {
@@ -368,7 +436,6 @@ int main (int argc, char *argv[]) {
 		head->next = temp;
 		head = temp;
 	}
-	//print_all(root);
 	LinkedList *not_solution = build_tree(root);
 	print_solution(not_solution,meters);
 	return 0;
