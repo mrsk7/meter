@@ -102,7 +102,6 @@ void fillWrapper(Wrapper *ws, FILE *file, int n) {
 void insert(struct queue *q,Node *nd) {
 	logEntry(__FUNCTION__);
 	if (q->rear == NULL) {
-		printf("q->rear == NULL\n");
 		q->rear = nd;
 		q->front = nd;
 		logExit(__FUNCTION__);
@@ -127,7 +126,7 @@ Node *removeq(struct queue *q) {
 }
 
 LinkedList *deepCopyLinkedList(LinkedList *head) {
-	logEntry(__FUNCTION__);
+	//logEntry(__FUNCTION__);
 	LinkedList *copy;
 	if (head == NULL) {
 		copy = NULL;
@@ -137,12 +136,12 @@ LinkedList *deepCopyLinkedList(LinkedList *head) {
 		copy->meter = head->meter;
 		copy->next = deepCopyLinkedList(head->next);
 	}
-	logExit(__FUNCTION__);
+	//logExit(__FUNCTION__);
 	return copy;
 }
 
 Wrapper *deepCopyWrapper(Wrapper *head) {
-	logEntry(__FUNCTION__);
+	//logEntry(__FUNCTION__);
 	Wrapper *copy;
 	if (head == NULL) {
 		copy = NULL;
@@ -153,12 +152,12 @@ Wrapper *deepCopyWrapper(Wrapper *head) {
 		copy->size = head->size;
 		copy->next = deepCopyWrapper(head->next);
 	}
-	logExit(__FUNCTION__);
+	//logExit(__FUNCTION__);
 	return copy;
 }
 
 void deepfreeLL(LinkedList *ll) {
-	logEntry(__FUNCTION__);
+	//logEntry(__FUNCTION__);
 	LinkedList *head = ll;
 	LinkedList *willy;
 	while(head!=NULL) {
@@ -166,11 +165,11 @@ void deepfreeLL(LinkedList *ll) {
 		head=head->next;
 		free(willy);
 	}
-	logExit(__FUNCTION__);
+	//logExit(__FUNCTION__);
 }
 
 void deepfreeW(Wrapper *eminem) {
-	logEntry(__FUNCTION__);
+	//logEntry(__FUNCTION__);
 	Wrapper *head = eminem;
 	Wrapper *willy;
 	while (head!=NULL) {
@@ -179,16 +178,16 @@ void deepfreeW(Wrapper *eminem) {
 		head=head->next;
 		free(willy);
 	}
-	logExit(__FUNCTION__);
+	//logExit(__FUNCTION__);
 }
 
 void deepfreeNode(Node *node) {
-	logEntry(__FUNCTION__);
+	//logEntry(__FUNCTION__);
 	deepfreeW(node->remaining);
 	deepfreeLL(node->openset);
 	deepfreeLL(node->closet);
 	free(node);
-	logExit(__FUNCTION__);
+	//logExit(__FUNCTION__);
 }
 
 
@@ -198,7 +197,10 @@ Node *createChild(Node *parent,int key) {
 	/* Checking whether given meter belongs to closed set.
 	 * If so, DO NOT create child, but return NULL to caller */
 	while (check!=NULL) {
-		if (check->meter == key) { return NULL; }
+		if (check->meter == key) { 
+			logExit(__FUNCTION__);
+			return NULL; 
+		}
 		else check=check->next;
 	}
 	
@@ -240,15 +242,16 @@ void updateClosedset(Node *node,LinkedList *ll,LinkedList* key) {
 
 void updateRemaining(Node *node,LinkedList *key) {
 	logEntry(__FUNCTION__);
+	printf("Key is %d\n",key->meter);
 	Wrapper *prev,*headW,*tmp;
 	LinkedList *headLL;
 	if (node->remaining == NULL) {
-		printf("Zero");
+		printf("Nothing remaining\n");
 		logExit(__FUNCTION__);
 		return;
 	}
 	if (node->remaining->next == NULL)	{//Check if there in only one wrapper element in the list
-		printf("Only on element\n");
+		printf("Only one element\n");
 		headW = node->remaining;
 		headLL = headW->this;
 		while (headLL!=NULL) {
@@ -263,25 +266,12 @@ void updateRemaining(Node *node,LinkedList *key) {
 	}
 	else {
 		/* Because I use a prev and a headW pointer, first I must check the head
-		printf("checking for %d \n");
 		 * of the Wrapper list alone.  */
-		/*Checking first element */
-		printf("More than one element\n");
-		headLL = node->remaining->this;
-		while (headLL!=NULL) {
-			if (headLL->meter==key->meter) {
-				deepfreeLL(node->remaining->this);
-				headW = node->remaining;
-				node->remaining = node->remaining->next;
-				free(headW);
-				break;
-			}
-			headLL= headLL->next;
-		}
-		/*Now I update the rest of the list */
-		prev = node->remaining;
-		headW = node->remaining->next;
+		printf("More than one elements\n");
 		int flag;
+		prev = NULL;
+		headW = node->remaining;
+	//	print_all(headW);
 		while (headW!=NULL) {			//While there are dangerous combinations
 			flag = 0;
 			headLL = headW->this;
@@ -294,12 +284,17 @@ void updateRemaining(Node *node,LinkedList *key) {
 				headLL=headLL->next;
 			}
 			if (flag == 1) {
-				prev->next = headW->next;
+				if (prev == NULL) node->remaining = headW->next;	//If first node is to be removed, point to next;
+				else prev->next = headW->next;						//Not looking at first node
 				tmp = headW;
 				headW = headW->next;
 				free(tmp);
 			}
-			else headW=headW->next;
+			else {				//If flag==1, thus didn't find the key in the wrapper
+				if (prev==NULL) prev = node->remaining;
+				else prev = prev->next;
+				headW=headW->next;
+			}
 		}
 	}
 	logExit(__FUNCTION__);
@@ -326,7 +321,6 @@ void printQSize(struct queue *q) {
 		cnt++;
 		head=head->next_in_queue;
 	}
-	printf("Queue size is now %d\n",cnt);
 }
 
 
@@ -349,9 +343,9 @@ LinkedList *build_tree(Wrapper *root) {
 	LinkedList *head;
 	while(1) {
 		current=removeq(q);
-		printQSize(q);
+		printf("Just removed node :\n");
+		print_child(current);
 		if ((current==NULL) || (current->remaining==NULL)) {
-			printf("break\n");
 			break;
 		}
 		head = current->remaining->this;
@@ -364,13 +358,11 @@ LinkedList *build_tree(Wrapper *root) {
 			updateOpenset(child,head);	//FIX
 			updateClosedset(child,current->remaining->this,head);
 			updateRemaining(child,head);
-			printf("Created Child:\n");
 			print_child(child);
+			printf("Inserting node:\n");
 			insert(q,child);
 			head=head->next;
 		}
-		printf("Current is \n");
-		print_child(current);
 		deepfreeNode(current);
 
 	}
