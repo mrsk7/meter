@@ -31,7 +31,7 @@ struct queue {
 
 typedef struct queue Queue;
 
-
+/*This function takes an array of Wrapper structs and returns a linked list of Wrapper structs */
 Wrapper *arrayToLinkedWrapper(Wrapper *array,int size) {
     Wrapper *ret;
     int i;
@@ -41,6 +41,7 @@ Wrapper *arrayToLinkedWrapper(Wrapper *array,int size) {
     return ret;
 }
 
+/* Function used by qsort to compare two structs */
 int compare (const void *elem1,const void *elem2) {
 	Wrapper *p1 = (Wrapper*) elem1;
 	Wrapper *p2 = (Wrapper*) elem2;
@@ -79,7 +80,7 @@ void fillWrapper(Wrapper *ws, FILE *file, int n) {
 		head=temp;
 	}
 }
-
+/* Takes a node and insert it in the queue */
 void insert(struct queue *q,Node *nd) {
 	if (q->rear == NULL) {
 		q->rear = nd;
@@ -89,7 +90,7 @@ void insert(struct queue *q,Node *nd) {
 	(q->rear)->next_in_queue = nd;
 	q->rear = nd;
 }
-
+/* Remove the first element from the queue */
 Node *removeq(struct queue *q) {
 	if (q->front == NULL) {
 		return NULL;
@@ -99,6 +100,9 @@ Node *removeq(struct queue *q) {
 	if (q->front == NULL) q->rear = NULL;
 	return ret;
 }
+
+/* From now on, deepCopyXXX takes a XXX and deep copies it's entries
+ * into a new XXX struct recursivly. XXX can be a Node, a Wrapper and a LinkedList */
 
 LinkedList *deepCopyLinkedList(LinkedList *head) {
 	LinkedList *copy;
@@ -127,6 +131,7 @@ Wrapper *deepCopyWrapper(Wrapper *head) {
 	return copy;
 }
 
+/* Similarly, deepfree recursivly frees given struct */
 void deepfreeLL(LinkedList *ll) {
 	LinkedList *head = ll;
 	LinkedList *willy;
@@ -154,7 +159,7 @@ void deepfreeNode(Node *node) {
 	free(node);
 }
 
-
+/* Takes a parent node and a key and creates a new child node containing the key in its openset*/
 Node *createChild(Node *parent,int key) {
 	Node *ret = malloc(sizeof(Node));
 	ret->next_in_queue = NULL;
@@ -164,6 +169,7 @@ Node *createChild(Node *parent,int key) {
 	return ret;
 }
 
+
 void updateOpenset(Node *node,LinkedList *ll) {
 	LinkedList *entry = malloc(sizeof(LinkedList));
 	entry->meter = ll->meter;
@@ -171,6 +177,7 @@ void updateOpenset(Node *node,LinkedList *ll) {
 	node->openset = entry;
 }
 
+/*When you find key in the Node's remaining set, remove every entry containing it*/
 void updateRemaining(Node *node,LinkedList *key) {
 	Wrapper *prev,*headW,*tmp;
 	LinkedList *headLL;
@@ -223,6 +230,7 @@ void updateRemaining(Node *node,LinkedList *key) {
 	}
 }
 
+/* Basic function that build the tree and searches it breadth first */
 LinkedList *build_tree(Wrapper *root) {
 	int i;
 	struct queue *q = malloc(sizeof(struct queue));;
