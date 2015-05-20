@@ -232,7 +232,6 @@ void updateRemaining(Node *node,LinkedList *key) {
 
 /* Basic function that build the tree and searches it breadth first */
 LinkedList *build_tree(Wrapper *root) {
-	int i;
 	struct queue *q = malloc(sizeof(struct queue));;
 	q->rear = NULL;
 	q->front = NULL;
@@ -300,7 +299,7 @@ int main (int argc, char *argv[]) {
 		printf("error reading number of meters and number of dangerous combinations\n");
 		exit(1);
 	}
-	int i,num,j,input;
+	int i,num;
         Wrapper *array  = malloc(dangerous*sizeof(Wrapper));
         for (i=0;i<dangerous;i++) {
             if ((dummy = fscanf(file,"%d",&num)) == 0) {
